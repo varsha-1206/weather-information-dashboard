@@ -1,0 +1,53 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Information Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="dashboard">
+
+        <h1>Weather Dashboard</h1>
+        <p>Check the weather in your city</p>
+
+        <div class="search-box">
+            <input type="text" id="cityInput" placeholder="Enter city name">
+            <button id="searchBtn">Search</button>
+        </div>
+
+        <div class="weather-card">
+            <h2 id="cityName">Hyderabad</h2>
+            <h3 id="temperature">30°C</h3>
+            <button id="unitToggle">Switch to °F</button>
+            <p>Feels Like: <span id="feelsLike">--°C</span></p>
+            <p id="condition">Partly Cloudy</p>
+
+            <div class="weather-details">
+                <div class="detail">
+                    <h4>Humidity</h4>
+                    <p id="humidity">65%</p>
+                </div>
+
+                <div class="detail">
+                    <h4>Wind Speed</h4>
+                    <p id="wind">12 km/h</p>
+                </div>
+            </div>
+        </div>
+        
+    <div class="forecast-section">
+        <h2>5-Day Forecast</h2>
+        <div id="forecastContainer" class="forecast-container">
+            <p>Search for a city to view its forecast.</p>
+        </div>
+    </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
