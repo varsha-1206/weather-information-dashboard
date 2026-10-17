@@ -11,40 +11,100 @@
 
     <div class="dashboard">
 
-        <h1>Weather Dashboard</h1>
-        <p>Check the weather in your city</p>
-
-        <div class="search-box">
-            <input type="text" id="cityInput" placeholder="Enter city name">
-            <button id="searchBtn">Search</button>
-        </div>
-
-        <div class="weather-card">
-            <h2 id="cityName">Hyderabad</h2>
-            <h3 id="temperature">30°C</h3>
-            <button id="unitToggle">Switch to °F</button>
-            <p>Feels Like: <span id="feelsLike">--°C</span></p>
-            <p id="condition">Partly Cloudy</p>
-
-            <div class="weather-details">
-                <div class="detail">
-                    <h4>Humidity</h4>
-                    <p id="humidity">65%</p>
-                </div>
-
-                <div class="detail">
-                    <h4>Wind Speed</h4>
-                    <p id="wind">12 km/h</p>
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="brand">
+                <span class="brand-icon">🌤️</span>
+                <div>
+                    <h1>Weather <span>Dashboard</span></h1>
+                    <p>Get current weather and 5-day forecast for any city</p>
                 </div>
             </div>
+
+            <div class="unit-switch">
+                <button id="unitToggle" type="button">Switch to °F</button>
+            </div>
+        </header>
+
+        <!-- Search bar -->
+        <div class="search-row">
+            <div class="search-box">
+                <span class="search-icon">⌕</span>
+                <input
+                    type="text"
+                    id="cityInput"
+                    placeholder="Enter city name (e.g., Hyderabad, London, New York...)"
+                >
+                <button id="searchBtn" type="button">⌕ Search</button>
+            </div>
+
+            <div class="last-searched">
+                <span>📍</span>
+                <span>Search for your city</span>
+            </div>
         </div>
-        
-    <div class="forecast-section">
-        <h2>5-Day Forecast</h2>
-        <div id="forecastContainer" class="forecast-container">
-            <p>Search for a city to view its forecast.</p>
-        </div>
-    </div>
+
+        <!-- Main weather area -->
+        <section class="weather-layout">
+
+            <!-- Current weather -->
+            <div class="weather-card">
+                <div class="weather-heading">
+                    <h2 id="cityName">Hyderabad</h2>
+                    <p class="location-label">Current weather</p>
+                </div>
+
+                <div class="current-weather-layout">
+                    <div class="main-weather">
+                        <div id="currentIcon" class="current-weather-icon">🌤️</div>
+
+                        <div class="temperature-info">
+                            <h3 id="temperature">30°C</h3>
+                            <p class="feels-line">
+                                Feels like <span id="feelsLike">--°C</span>
+                            </p>
+                            <p id="condition">Partly Cloudy</p>
+                        </div>
+                    </div>
+
+                    <div class="weather-details">
+                        <div class="detail">
+                            <span class="detail-icon">💧</span>
+                            <div>
+                                <h4>Humidity</h4>
+                                <p id="humidity">65%</p>
+                            </div>
+                        </div>
+
+                        <div class="detail">
+                            <span class="detail-icon">💨</span>
+                            <div>
+                                <h4>Wind Speed</h4>
+                                <p id="wind">12 km/h</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weather message panel -->
+            <aside class="weather-message-card">
+                <div class="message-illustration">🌤️</div>
+                <div class="message-city-art">☁️ 🏙️ ☀️</div>
+                <h2>Weather at a glance</h2>
+                <p>Check the latest conditions and plan your day.</p>
+            </aside>
+
+        </section>
+
+        <!-- Five-day forecast -->
+        <section class="forecast-section">
+            <h2>5-Day Forecast</h2>
+
+            <div id="forecastContainer" class="forecast-container">
+                <p>Search for a city to view its forecast.</p>
+            </div>
+        </section>
 
     </div>
 

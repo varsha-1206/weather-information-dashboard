@@ -2,51 +2,66 @@
 const cityInput = document.getElementById("cityInput");
 const searchBtn = document.getElementById("searchBtn");
 const cityName = document.getElementById("cityName");
-//cityName.textContent = "DOM Practice";
 const temperature = document.getElementById("temperature");
 const condition = document.getElementById("condition");
 const unitToggle = document.getElementById("unitToggle");
-let isFahrenheit = false;
-let currentTemperatureC = null;
 const humidity = document.getElementById("humidity");
 const wind = document.getElementById("wind");
 const feelsLike = document.getElementById("feelsLike");
 const forecastContainer = document.getElementById("forecastContainer");
+
+const currentIcon = document.getElementById("currentIcon");
+const lastSearched = document.querySelector(".last-searched");
+const messageTitle = document.querySelector(".weather-message-card h2");
+const messageText = document.querySelector(".weather-message-card p");
+
+let isFahrenheit = false;
+let currentTemperatureC = null;
+let feelsLikeC = null;
+let lastDailyForecast = null;
+
 console.log("Weather Dashboard JavaScript loaded");
+
+// Search button
 searchBtn.addEventListener("click", getWeather);
+
+// Celsius / Fahrenheit toggle
 unitToggle.addEventListener("click", function () {
     isFahrenheit = !isFahrenheit;
 
-    if (isFahrenheit) {
-        unitToggle.textContent = "Switch to °C";
-    } else {
-        unitToggle.textContent = "Switch to °F";
-    }
+    unitToggle.textContent = isFahrenheit
+        ? "Switch to °C"
+        : "Switch to °F";
 
     if (currentTemperatureC !== null) {
-        const convertedTemp = convertTemperature(currentTemperatureC);
-        const unit = isFahrenheit ? "°F" : "°C";
-
-        temperature.textContent = `${convertedTemp.toFixed(1)}${unit}`;
+        temperature.textContent =
+            `${convertTemperature(currentTemperatureC).toFixed(1)}${isFahrenheit ? "°F" : "°C"}`;
     }
-    getWeather();
-});
-searchBtn.addEventListener("click", function () {
-console.log("Search button clicked!");
-});
-const savedCity = localStorage.getItem("city");
-if (savedCity) {
-    cityInput.value = savedCity;
-}
-getWeather();
 
-// Search when the user presses Enter
+    updateFeelsLike();
+
+    if (lastDailyForecast) {
+        displayForecast(lastDailyForecast);
+    }
+});
+
+// Search when Enter is pressed
 cityInput.addEventListener("keydown", function (event) {
     if (event.key === "Enter") {
         getWeather();
     }
 });
 
+// Load the last searched city
+const savedCity = localStorage.getItem("city");
+
+if (savedCity) {
+    cityInput.value = savedCity;
+}
+
+getWeather();
+
+// Fetch weather information
 async function getWeather() {
     const city = cityInput.value.trim();
 
@@ -63,7 +78,7 @@ async function getWeather() {
     forecastContainer.innerHTML = "<p>Loading forecast...</p>";
 
     try {
-        // Step 1: Find the city's latitude and longitude
+        // Step 1: Find the city
         const geoUrl =
             `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
 
@@ -76,14 +91,29 @@ async function getWeather() {
         const geoData = await geoResponse.json();
 
         if (!geoData.results || geoData.results.length === 0) {
+            currentTemperatureC = null;
+            feelsLikeC = null;
+            lastDailyForecast = null;
+
             cityName.textContent = "City not found";
             condition.textContent = "Please enter a valid city name.";
-            temperature.textContent = "--°C";
-            feelsLike.textContent = "--°C";
-            humidity.textContent = "--%";
-            wind.textContent = "-- km/h";
+            temperature.textContent = "--";
+            feelsLike.textContent = "--";
+            humidity.textContent = "--";
+            wind.textContent = "--";
             forecastContainer.innerHTML =
                 "<p>No forecast available. Try another city.</p>";
+
+            if (currentIcon) {
+                currentIcon.textContent = "🌍";
+            }
+
+            if (messageTitle && messageText) {
+                messageTitle.textContent = "City not found";
+                messageText.textContent =
+                    "Please check the spelling and try another city.";
+            }
+
             return;
         }
 
@@ -91,7 +121,7 @@ async function getWeather() {
         const latitude = location.latitude;
         const longitude = location.longitude;
 
-        // Step 2: Fetch current weather information
+        // Step 2: Fetch current weather
         const weatherUrl =
             `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m&timezone=auto`;
 
@@ -103,23 +133,27 @@ async function getWeather() {
 
         const weatherData = await weatherResponse.json();
         const current = weatherData.current;
-        currentTemperatureC = current.temperature_2m;
 
         if (!current) {
             throw new Error("Current weather data is unavailable.");
         }
 
-        // Step 3: Display current weather
-        cityName.textContent = `${location.name}, ${location.country}`;
-        localStorage.setItem("city", location.name);
-        const convertedTemp = convertTemperature(current.temperature_2m);
-const unit = isFahrenheit ? "°F" : "°C";
+        currentTemperatureC = current.temperature_2m;
+        feelsLikeC = current.apparent_temperature;
 
-temperature.textContent = `${convertedTemp.toFixed(1)}${unit}`;
-        feelsLike.textContent =
-            current.apparent_temperature !== undefined
-                ? `${current.apparent_temperature}°C`
-                : "Not available";
+        // Step 3: Display current weather
+        cityName.textContent = location.name;
+        localStorage.setItem("city", location.name);
+
+        if (lastSearched) {
+            lastSearched.innerHTML =
+                `<span>📍</span><span>Last searched: ${location.name}</span>`;
+        }
+
+        temperature.textContent =
+            `${convertTemperature(currentTemperatureC).toFixed(1)}${isFahrenheit ? "°F" : "°C"}`;
+
+        updateFeelsLike();
 
         humidity.textContent =
             `${current.relative_humidity_2m}%`;
@@ -127,16 +161,27 @@ temperature.textContent = `${convertedTemp.toFixed(1)}${unit}`;
         wind.textContent =
             `${current.wind_speed_10m} km/h`;
 
-        condition.innerHTML = `
-    <span class="current-weather-icon">
-        ${getWeatherIcon(current.weather_code)}
-    </span>
-    <span>
-        ${getWeatherCondition(current.weather_code)}
-    </span>
-`;
+        // Update the weather condition and icon
+        const weatherIcon = getWeatherIcon(current.weather_code);
+        const weatherDescription =
+            getWeatherCondition(current.weather_code);
 
-        // Step 4: Fetch the five-day forecast
+        if (currentIcon) {
+            currentIcon.textContent = weatherIcon;
+        }
+
+        condition.innerHTML = `
+            <span>${weatherDescription}</span>
+        `;
+
+        // Update the message card
+        updateWeatherMessage(
+            current.weather_code,
+            location.name,
+            current.is_day
+        );
+
+        // Step 4: Fetch five-day forecast
         const forecastUrl =
             `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`;
 
@@ -149,8 +194,10 @@ temperature.textContent = `${convertedTemp.toFixed(1)}${unit}`;
         const forecastData = await forecastResponse.json();
 
         if (forecastData.daily) {
-            displayForecast(forecastData.daily);
+            lastDailyForecast = forecastData.daily;
+            displayForecast(lastDailyForecast);
         } else {
+            lastDailyForecast = null;
             forecastContainer.innerHTML =
                 "<p>Forecast data is unavailable.</p>";
         }
@@ -164,17 +211,85 @@ temperature.textContent = `${convertedTemp.toFixed(1)}${unit}`;
         condition.textContent =
             "Please check your internet connection and try again.";
 
-        temperature.textContent = "--°C";
-        feelsLike.textContent = "--°C";
-        humidity.textContent = "--%";
-        wind.textContent = "-- km/h";
+        temperature.textContent = "--";
+        feelsLike.textContent = "--";
+        humidity.textContent = "--";
+        wind.textContent = "--";
+
+        if (currentIcon) {
+            currentIcon.textContent = "🌐";
+        }
+
+        lastDailyForecast = null;
 
         forecastContainer.innerHTML =
             "<p>Unable to load the forecast. Please try again.</p>";
 
+        if (messageTitle && messageText) {
+            messageTitle.textContent = "Weather unavailable";
+            messageText.textContent =
+                "Please check your internet connection and try again.";
+        }
+
     } finally {
         searchBtn.disabled = false;
-        searchBtn.textContent = "Search";
+        searchBtn.textContent = "⌕ Search";
+    }
+}
+
+// Convert Celsius to Fahrenheit when selected
+function convertTemperature(celsius) {
+    if (isFahrenheit) {
+        return (celsius * 9 / 5) + 32;
+    }
+
+    return celsius;
+}
+
+// Update the feels-like temperature
+function updateFeelsLike() {
+    if (feelsLikeC === null || !Number.isFinite(Number(feelsLikeC))) {
+        feelsLike.textContent = "--";
+        return;
+    }
+
+    feelsLike.textContent =
+        `${convertTemperature(Number(feelsLikeC)).toFixed(1)}${isFahrenheit ? "°F" : "°C"}`;
+}
+
+// Update the message card according to the weather
+function updateWeatherMessage(code, city, isDay) {
+    if (!messageTitle || !messageText) {
+        return;
+    }
+
+    if ([95, 96, 99].includes(code)) {
+        messageTitle.textContent = "Thunderstorms expected";
+        messageText.textContent =
+            `Be careful outdoors and check the latest conditions in ${city}.`;
+    } else if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) {
+        messageTitle.textContent = "Rainy weather today";
+        messageText.textContent =
+            `Consider carrying an umbrella when going out in ${city}.`;
+    } else if ([71, 73, 75, 77, 85, 86].includes(code)) {
+        messageTitle.textContent = "Cold and snowy weather";
+        messageText.textContent =
+            `Check local conditions before travelling in ${city}.`;
+    } else if ([45, 48].includes(code)) {
+        messageTitle.textContent = "Foggy conditions";
+        messageText.textContent =
+            `Take care while travelling in ${city}.`;
+    } else if (code === 0 || code === 1 || code === 2) {
+        messageTitle.textContent = isDay
+            ? "Good weather for today!"
+            : "Clear skies tonight";
+
+        messageText.textContent =
+            `Enjoy the weather in ${city}.`;
+    } else {
+        messageTitle.textContent = "Today's weather update";
+        messageText.textContent =
+            `Stay updated with the latest weather in ${city}.`;
     }
 }
 
@@ -189,64 +304,73 @@ function displayForecast(daily) {
             weekday: "short"
         });
 
+        const dateText = date.toLocaleDateString("en-US", {
+            day: "numeric",
+            month: "short"
+        });
+
+        const high = convertTemperature(daily.temperature_2m_max[i]);
+        const low = convertTemperature(daily.temperature_2m_min[i]);
+        const unit = isFahrenheit ? "°F" : "°C";
+
         const card = document.createElement("div");
         card.className = "forecast-card";
 
         card.innerHTML = `
             <h3>${day}</h3>
-            <p>
-    <p class="forecast-condition">
-    <span class="weather-icon">${getWeatherIcon(daily.weather_code[i])}</span>
-    ${getWeatherCondition(daily.weather_code[i])}
-</p>
-</p>
-            <p>High: ${convertTemperature(daily.temperature_2m_max[i]).toFixed(1)}${isFahrenheit ? "°F" : "°C"}</p>
-<p>Low: ${convertTemperature(daily.temperature_2m_min[i]).toFixed(1)}${isFahrenheit ? "°F" : "°C"}</p>
+            <p>${dateText}</p>
+
+            <p class="forecast-condition">
+                <span class="weather-icon">
+                    ${getWeatherIcon(daily.weather_code[i])}
+                </span>
+                <span>${getWeatherCondition(daily.weather_code[i])}</span>
+            </p>
+
+            <p class="forecast-temperature">
+                <strong>${high.toFixed(0)}°</strong>
+                / ${low.toFixed(0)}°
+                ${isFahrenheit ? "F" : "C"}
+            </p>
         `;
 
         forecastContainer.appendChild(card);
     }
 }
 
-// Convert weather codes into readable conditions
+// Convert Open-Meteo weather codes to readable conditions
 function getWeatherCondition(code) {
-    if (code === 0) return "☀️ Clear Sky";
-    if (code === 1) return "🌤️ Mainly Clear";
-    if (code === 2) return "⛅ Partly Cloudy";
-    if (code === 3) return "☁️ Overcast";
-    if (code === 45 || code === 48) return "🌫️ Foggy";
+    if (code === 0) return "Clear Sky";
+    if (code === 1) return "Mainly Clear";
+    if (code === 2) return "Partly Cloudy";
+    if (code === 3) return "Overcast";
+    if (code === 45 || code === 48) return "Foggy";
 
     if ([51, 53, 55, 56, 57].includes(code)) {
-        return "🌦️ Drizzle";
+        return "Drizzle";
     }
 
     if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) {
-        return "🌧️ Rainy";
+        return "Rainy";
     }
 
     if ([71, 73, 75, 77, 85, 86].includes(code)) {
-        return "❄️ Snowy";
+        return "Snowy";
     }
 
     if ([95, 96, 99].includes(code)) {
-        return "⛈️ Thunderstorm";
+        return "Thunderstorm";
     }
 
-    return "🌡️ Unknown Weather";
+    return "Unknown Weather";
 }
-function convertTemperature(celsius) {
-    if (isFahrenheit) {
-        return (celsius * 9 / 5) + 32;
-    }
 
-    return celsius;
-}
+// Return an icon for each weather condition
 function getWeatherIcon(code) {
     if (code === 0) return "☀️";
     if (code === 1) return "🌤️";
     if (code === 2) return "⛅";
     if (code === 3) return "☁️";
-
     if (code === 45 || code === 48) return "🌫️";
 
     if ([51, 53, 55, 56, 57].includes(code)) {
